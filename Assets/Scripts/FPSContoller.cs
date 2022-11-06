@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class FPSContoller : MonoBehaviour
 {
@@ -22,12 +23,24 @@ public class FPSContoller : MonoBehaviour
 
     public Animator animator;
 
+    // 所持弾薬、最高所持弾薬、マガジン内弾数、マガジン内最大数
+    int ammuniton = 50, maxAmmuniton = 50, ammoClip = 10, maxAmmoClip = 10;
+
+    // 体力、Max体力、体力ber、弾薬テキスト
+    int playerHP = 100, maxPlayerHP = 100;
+    public Slider hpBer;
+    public Text ammoText;
+
 
     void Start()
     {
         cameraRot = cam.transform.localRotation;
         characterRot = transform.localRotation;
 
+        GameState.canShoot = true;
+
+        hpBer.value = playerHP;
+        ammoText.text = ammoClip + "/" + ammuniton;
     }
 
     // Update is called once per frame
@@ -46,16 +59,41 @@ public class FPSContoller : MonoBehaviour
 
         UpdateCursorLock();
 
-        if (Input.GetMouseButton(0))
+        // 射撃
+        if (Input.GetMouseButton(0) && GameState.canShoot)
         {
-            animator.SetTrigger("Fire");
+            if (ammoClip > 0)
+            {
+                animator.SetTrigger("Fire");
+                GameState.canShoot = false;
+
+                ammoClip--; // 弾薬を減らす
+                ammoText.text = ammoClip + "/" + ammuniton;
+            }
+            else
+            {
+                Debug.Log("弾切れ");
+            }
+            
         }
 
+        // リロード
         if (Input.GetKeyDown(KeyCode.R))
         {
-            animator.SetTrigger("Reload");
+            int amountNeed = maxAmmoClip - ammoClip;
+            int ammoAvailable = amountNeed < ammuniton ? amountNeed : ammuniton;
+
+            if(amountNeed != 0 && ammuniton != 0)
+            {
+                animator.SetTrigger("Reload");
+                ammuniton -= ammoAvailable;
+                ammoClip += ammoAvailable;
+                ammoText.text = ammoClip + "/" + ammuniton;
+            }
+            
         }
 
+        // 移動
         if (Mathf.Abs(x) > 0 || Mathf.Abs(z) > 0)
         {
             if (!animator.GetBool("Walk"))
@@ -68,6 +106,7 @@ public class FPSContoller : MonoBehaviour
             animator.SetBool("Walk", false);
         }
 
+        // 走り
         if (z > 0 && Input.GetKey(KeyCode.LeftShift))
         {
             if (!animator.GetBool("Run"))
